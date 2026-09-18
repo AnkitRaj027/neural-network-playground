@@ -1,9 +1,9 @@
 import gradio as gr
-import torch
 import torch.nn as nn
 from model import NeuralNetwork
 from train import train_model
 from data import X_train, y_train, X_test, y_test
+from utils import create_training_plots, plot_decision_boundary
 def train_from_ui(hidden_layers,neurons,activation,learning_rate,epochs):
     activation_functions={
         "ReLU":nn.ReLU,
@@ -31,15 +31,27 @@ def train_from_ui(hidden_layers,neurons,activation,learning_rate,epochs):
         int(epochs)
     )
     final_accuracy=test_accuracies[-1]*100
+    loss_fig, accuracy_fig = create_training_plots(
+        train_losses,
+        test_accuracies
+    )
+    boundary_fig = plot_decision_boundary(
+        model,
+        X_test,
+        y_test
+)
 
     architecture= ("2->"+"->".join(str(size) for size in hidden_sizes)+"->2")
     return (
         f"Model trained successfully!\n"
         f"Architecture: {architecture}\n"
-        f"activation: {activation}\n"
-        f"learning_rate: {learning_rate}\n"
-        f"epochs: {epochs} \n"
-        f"Final Accuracy: {final_accuracy:.2f}%\n"
+        f"Activation: {activation}\n"
+        f"Learning Rate: {learning_rate}\n"
+        f"Epochs: {epochs}\n"
+        f"Final Accuracy: {final_accuracy:.2f}%",
+        loss_fig,
+        accuracy_fig,
+        boundary_fig
     )
 
 with gr.Blocks() as app:
@@ -85,9 +97,18 @@ with gr.Blocks() as app:
             status=gr.Textbox(
                 label="Status",
             )
+            loss_plot=gr.Plot(
+                label="Training Loss"
+            )
+            accuracy_plot=gr.Plot(
+                label="Test Accuracy"
+            )
+            boundary_plot = gr.Plot(
+                label="Decision Boundary"
+            )
             train_button.click(
                 fn=train_from_ui,
                 inputs=[hidden_layers,neurons,activation,learning_rate,epochs],
-                outputs=status
+                outputs=[status,loss_plot,accuracy_plot,boundary_plot]
             )
 app.launch()
